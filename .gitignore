@@ -13,3 +13,16 @@ __pycache__/
 # Настройки IDE (VS Code)
 .idea/
 .vscode/
+# Локальные данные и результаты проверок
+equipment.db
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+.pytest_cache/
+.coverage
+htmlcov/
+Data-Science-For-Beginners-from-scratch-course/
+.upgrade_backups/
+.env.*
+!.env.example
