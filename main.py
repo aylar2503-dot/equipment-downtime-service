@@ -441,13 +441,13 @@ def receive_event(event: MachineEvent):
                 ),
             )
 
-            # Формируем VK-уведомление.
+            # В SQLite время остаётся UTC, а в VK показываем МСК (UTC+3).
+            moscow_time = now.astimezone(timezone(timedelta(hours=3)))
             text_message = (
                 "ОСТАНОВКА ОБОРУДОВАНИЯ\n"
                 f"Станок: {machine_id}\n"
                 "Статус: STOPPED\n"
-                f"Время регистрации: "
-                f"{now.strftime('%d.%m.%Y %H:%M:%S')} UTC\n"
+                f"Время регистрации: {moscow_time:%d.%m.%Y %H:%M:%S} МСК\n"
                 "Требуется проверка оборудования."
             )
 
