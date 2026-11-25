@@ -9,9 +9,9 @@
     :root { color-scheme: light; --bg:#f6f7f6; --paper:#fff; --ink:#222c32; --muted:#66747c; --line:#dfe3e2; --accent:#344e61; --soft:#eef2f3; --stop:#89533c; --stop-bg:#fbf0e8; --good:#356452; --good-bg:#edf5ef; }
     * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif; line-height:1.5; font-size:16px; }
-    button,input { font:inherit; }
+    button,input,select { font:inherit; }
     button { cursor:pointer; }
-    button:focus-visible,input:focus-visible,summary:focus-visible { outline:3px solid #869ba7; outline-offset:3px; }
+    button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible { outline:3px solid #869ba7; outline-offset:3px; }
     .wrap { max-width:980px; margin:0 auto; padding:36px 22px 70px; }
     header { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:28px; }
     .eyebrow { font-size:13px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin:0 0 7px; }
@@ -60,7 +60,9 @@
     .service-status { padding:8px 0; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:14px; }
     .info { margin:0 0 17px; color:var(--muted); font-size:14px; }
     label { display:block; font-weight:550; font-size:14px; margin:12px 0 6px; }
-    input { width:100%; border:1px solid #c7cdcd; border-radius:7px; padding:10px 12px; background:#fff; color:var(--ink); }
+    input,select { width:100%; border:1px solid #c7cdcd; border-radius:7px; padding:10px 12px; background:#fff; color:var(--ink); }
+    #machine-id { margin-top:10px; }
+    #machine-id[hidden] { display:none; }
     .controls { display:flex; flex-wrap:wrap; gap:10px; margin-top:13px; }
     .action { background:var(--paper); border:1px solid #bcc7cb; padding:10px 18px; border-radius:8px; }
     .action.stop { background:var(--accent); border-color:var(--accent); color:#fff; }
@@ -122,8 +124,13 @@
     <summary>Тестирование событий</summary>
     <div class="detail-body">
       <p class="info"><strong>Только для проверки программы.</strong> Эти кнопки записывают события в базу. При новой остановке возможны реальные сообщения VK и задачи Jira. Сами станки кнопки не включают и не выключают.</p>
-      <label for="machine-id">Идентификатор станка</label>
-      <input id="machine-id" value="CNC-01" maxlength="50" autocomplete="off">
+      <label for="machine-select">Выберите станок</label>
+      <select id="machine-select">
+        <option value="CNC-01">CNC-01</option>
+        <option value="__new__">+ Новый станок…</option>
+      </select>
+      <input id="machine-id" type="text" maxlength="50" autocomplete="off"
+             placeholder="Название нового станка" aria-label="Название нового станка" hidden>
       <label for="api-key">Ключ доступа к API (только если настроен)</label>
       <input id="api-key" type="password" placeholder="Если не настроен — оставить пустым" autocomplete="off">
       <div class="controls">
@@ -138,7 +145,7 @@
 <script>
   'use strict';
   const byId = id => document.getElementById(id);
-  const state = {events:[],downtimes:[],incidents:[],notifications:[]};
+  const state = {events:[],downtimes:[],incidents:[],notifications:[],machineOptionsKey:''};
   const fmt = new Intl.DateTimeFormat('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
   const timeOf = value => {
     if (!value) return '—';
@@ -161,7 +168,21 @@
     el.append(make('span','dot'),document.createTextNode(stopped?'Остановлен':'Работает'));
     return el;
   };
+  function updateMachineSelection(machines){
+    const select=byId('machine-select');
+    const names=[...new Set(['CNC-01',...machines.map(m=>m.machine_id).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,'ru'));
+    const key=names.join('\u0000');
+    if(state.machineOptionsKey===key) return;
+    state.machineOptionsKey=key;
+    const previous=select.value;
+    const options=names.map(name=>new Option(name,name));
+    options.push(new Option('+ Новый станок…','__new__'));
+    select.replaceChildren(...options);
+    select.value=previous==='__new__'||names.includes(previous)?previous:'CNC-01';
+    byId('machine-id').hidden=select.value!=='__new__';
+  }
   function renderMachines(machines){
+    updateMachineSelection(machines);
     const running=machines.filter(m=>m.status==='RUNNING').length;
     const stopped=machines.filter(m=>m.status==='STOPPED').length;
     byId('running').textContent=running;
@@ -241,7 +262,8 @@
     }finally{refreshing=false;byId('refresh').disabled=false;}
   }
   async function sendEvent(status){
-    const machine=byId('machine-id').value.trim();
+    const machine=(byId('machine-select').value==='__new__'
+      ?byId('machine-id').value:byId('machine-select').value).trim();
     const output=byId('test-message');
     if(!machine){output.textContent='Укажите название станка.';return;}
     const warning=status==='STOPPED'
@@ -271,6 +293,11 @@
     }catch(error){output.textContent='Не удалось отправить событие. Проверьте сервер.';console.error(error);}
     finally{controls.forEach(el=>el.disabled=false);}
   }
+  byId('machine-select').addEventListener('change',()=>{
+    const isNew=byId('machine-select').value==='__new__';
+    byId('machine-id').hidden=!isNew;
+    if(isNew) byId('machine-id').focus();
+  });
   byId('refresh').addEventListener('click',refresh);
   byId('send-running').addEventListener('click',()=>sendEvent('RUNNING'));
   byId('send-stopped').addEventListener('click',()=>sendEvent('STOPPED'));
