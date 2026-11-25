@@ -1,659 +1,281 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Мониторинг оборудования</title>
-
-<style>
-
-* {
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    background: #f5f5f5;
-    color: #222;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 14px;
-}
-
-header {
-    background: #ffffff;
-    border-bottom: 1px solid #ddd;
-    padding: 24px 40px;
-}
-
-header h1 {
-    margin: 0;
-    font-size: 23px;
-    font-weight: 600;
-}
-
-header p {
-    color: #777;
-    margin: 8px 0 0;
-}
-
-.container {
-    max-width: 1250px;
-    margin: 0 auto;
-    padding: 30px;
-}
-
-.section {
-    background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 24px;
-    margin-bottom: 20px;
-}
-
-.section h2 {
-    font-size: 17px;
-    font-weight: 600;
-    margin: 0 0 22px;
-}
-
-.stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 20px;
-}
-
-.stat {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 24px;
-}
-
-.stat-label {
-    font-size: 13px;
-    color: #666;
-}
-
-.stat-value {
-    font-size: 34px;
-    font-weight: 600;
-    margin-top: 12px;
-}
-
-.grid {
-    display: grid;
-    grid-template-columns: 1.6fr 1fr;
-    gap: 20px;
-}
-
-.machine {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #eee;
-    padding: 16px 0;
-    gap: 12px;
-}
-
-.machine:last-child {
-    border-bottom: none;
-}
-
-.machine-name {
-    font-size: 15px;
-    font-weight: 600;
-}
-
-.badge {
-    font-size: 12px;
-    padding: 7px 12px;
-    background: #eeeeee;
-    border-radius: 4px;
-    white-space: nowrap;
-}
-
-.badge.stopped {
-    background: #333333;
-    color: #ffffff;
-}
-
-.badge.running {
-    background: #e5e5e5;
-    color: #333333;
-}
-
-input {
-    width: 100%;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: #fff;
-    padding: 12px;
-    margin-top: 8px;
-    font-size: 14px;
-}
-
-input:focus {
-    outline: 1px solid #555;
-}
-
-label {
-    font-size: 13px;
-    color: #555;
-}
-
-.actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 18px;
-}
-
-button {
-    flex: 1;
-    background: #eeeeee;
-    border: 1px solid #cccccc;
-    border-radius: 4px;
-    padding: 12px;
-    color: #222;
-    cursor: pointer;
-    font-size: 13px;
-}
-
-button:hover {
-    background: #dddddd;
-}
-
-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-button.primary {
-    background: #333333;
-    color: white;
-    border-color: #333333;
-}
-
-button.primary:hover {
-    background: #111111;
-}
-
-.message {
-    color: #555;
-    margin-top: 18px;
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-.table-container {
-    width: 100%;
-    overflow-x: auto;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th {
-    text-align: left;
-    color: #777;
-    font-weight: 500;
-    font-size: 12px;
-    padding: 14px 12px;
-    border-bottom: 1px solid #ddd;
-}
-
-td {
-    padding: 15px 12px;
-    border-bottom: 1px solid #eee;
-    font-size: 13px;
-}
-
-tbody tr:hover {
-    background: #f7f7f7;
-}
-
-.empty {
-    color: #888;
-    padding: 20px 0;
-}
-
-.top-line {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    gap: 15px;
-}
-
-.top-line h2 {
-    margin: 0;
-}
-
-.update {
-    font-size: 12px;
-    color: #888;
-}
-
-footer {
-    text-align: center;
-    color: #999;
-    padding: 20px;
-    font-size: 12px;
-}
-
-@media(max-width: 800px) {
-    .stats,
-    .grid {
-        grid-template-columns: 1fr;
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Мониторинг оборудования</title>
+  <style>
+    :root { color-scheme: light; --bg:#f6f7f6; --paper:#fff; --ink:#222c32; --muted:#66747c; --line:#dfe3e2; --accent:#344e61; --soft:#eef2f3; --stop:#89533c; --stop-bg:#fbf0e8; --good:#356452; --good-bg:#edf5ef; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif; line-height:1.5; font-size:16px; }
+    button,input { font:inherit; }
+    button { cursor:pointer; }
+    button:focus-visible,input:focus-visible,summary:focus-visible { outline:3px solid #869ba7; outline-offset:3px; }
+    .wrap { max-width:980px; margin:0 auto; padding:36px 22px 70px; }
+    header { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:28px; }
+    .eyebrow { font-size:13px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin:0 0 7px; }
+    h1 { font-size:clamp(27px,4vw,36px); line-height:1.2; font-weight:650; letter-spacing:-.03em; margin:0 0 9px; }
+    .subtitle { margin:0; color:var(--muted); }
+    .refresh { border:1px solid var(--line); border-radius:8px; padding:10px 15px; background:var(--paper); color:var(--ink); white-space:nowrap; }
+    .refresh:hover { background:var(--soft); }
+    .connection { display:flex; align-items:center; gap:8px; margin:0 0 17px; font-size:13px; color:var(--muted); }
+    .dot { display:inline-block; width:9px; height:9px; border-radius:50%; background:#8b9598; flex:none; }
+    .dot.good { background:#488568; }
+    .dot.bad { background:#bc785c; }
+    .card { border:1px solid var(--line); border-radius:11px; background:var(--paper); padding:25px 27px; margin-bottom:16px; }
+    .summary { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:18px; }
+    .summary-main { display:flex; align-items:baseline; gap:12px; }
+    .big { font-size:52px; font-weight:650; line-height:1; letter-spacing:-.055em; }
+    .metric-name { font-size:18px; font-weight:580; }
+    .summary-extra { display:flex; gap:30px; color:var(--muted); }
+    .summary-extra strong { display:block; font-size:25px; font-weight:650; color:var(--ink); }
+    .heading { display:flex; justify-content:space-between; align-items:center; gap:15px; margin:0 0 15px; }
+    h2 { margin:0; font-size:19px; font-weight:630; letter-spacing:-.015em; }
+    .hint { color:var(--muted); font-size:13px; }
+    .machine { display:flex; justify-content:space-between; align-items:center; gap:12px; border-top:1px solid var(--line); padding:17px 0; }
+    .machine:first-child { border-top:0; padding-top:4px; }
+    .machine:last-child { padding-bottom:2px; }
+    .machine-name { font-weight:630; font-size:17px; overflow-wrap:anywhere; }
+    .badge { display:inline-flex; align-items:center; gap:8px; white-space:nowrap; border-radius:30px; background:var(--good-bg); color:var(--good); font-size:14px; padding:7px 12px; font-weight:600; }
+    .badge.stop { background:var(--stop-bg); color:var(--stop); }
+    .badge .dot { width:7px; height:7px; background:currentColor; }
+    .empty { margin:0; color:var(--muted); padding:11px 0 3px; }
+    .event { display:grid; grid-template-columns:minmax(90px,1fr) minmax(110px,1fr) auto; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--line); }
+    .event:first-child { border-top:0; }
+    .event-time { color:var(--muted); font-size:14px; }
+    .event-machine { font-weight:600; overflow-wrap:anywhere; }
+    .event-status { text-align:right; font-size:14px; font-weight:550; }
+    .event-status.stop { color:var(--stop); }
+    details { border:1px solid var(--line); background:var(--paper); border-radius:11px; padding:0 24px; margin:16px 0; }
+    summary { list-style:none; cursor:pointer; padding:19px 1px; font-weight:600; display:flex; align-items:center; justify-content:space-between; gap:15px; }
+    summary::-webkit-details-marker { display:none; }
+    summary::after { content:"Показать  +"; color:var(--muted); font-weight:400; font-size:14px; }
+    details[open] summary::after { content:"Скрыть  −"; }
+    .detail-body { padding:0 1px 20px; }
+    .section-label { margin:17px 0 8px; font-weight:650; font-size:15px; }
+    .outage { display:grid; grid-template-columns:minmax(110px,1fr) minmax(100px,1.2fr) minmax(110px,1.3fr) auto; gap:12px; align-items:center; padding:10px 0; border-top:1px solid var(--line); font-size:14px; }
+    .outage span { overflow-wrap:anywhere; }
+    .quiet { color:var(--muted); }
+    .service-status { padding:8px 0; border-top:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:14px; }
+    .info { margin:0 0 17px; color:var(--muted); font-size:14px; }
+    label { display:block; font-weight:550; font-size:14px; margin:12px 0 6px; }
+    input { width:100%; border:1px solid #c7cdcd; border-radius:7px; padding:10px 12px; background:#fff; color:var(--ink); }
+    .controls { display:flex; flex-wrap:wrap; gap:10px; margin-top:13px; }
+    .action { background:var(--paper); border:1px solid #bcc7cb; padding:10px 18px; border-radius:8px; }
+    .action.stop { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .action:disabled { opacity:.5; cursor:wait; }
+    .message { color:var(--muted); font-size:14px; margin:13px 0 0; min-height:1.4em; white-space:pre-line; overflow-wrap:anywhere; }
+    footer { text-align:center; color:var(--muted); font-size:12px; margin-top:20px; }
+    @media(max-width:620px) {
+      .wrap{padding:20px 12px 40px} header{align-items:flex-start} .refresh{padding:9px 11px} .card{padding:18px} .summary-extra{gap:19px} .big{font-size:43px} .event{grid-template-columns:90px 1fr auto;gap:7px} .event-time{font-size:12px} details{padding:0 16px} .outage{grid-template-columns:1fr 1fr;gap:5px 14px} .outage span:last-child{text-align:right}
     }
-
-    .container {
-        padding: 15px;
-    }
-
-    header {
-        padding: 20px;
-    }
-
-    .actions {
-        flex-direction: column;
-    }
-}
-
-</style>
-
+  </style>
 </head>
-
 <body>
-
-<header>
-    <h1>Мониторинг оборудования</h1>
-    <p>Система контроля состояния промышленных станков</p>
-</header>
-
-<main class="container">
-
-    <div class="stats">
-
-        <div class="stat">
-            <div class="stat-label">Остановлены</div>
-            <div class="stat-value" id="stopped">0</div>
-        </div>
-
-        <div class="stat">
-            <div class="stat-label">Работают</div>
-            <div class="stat-value" id="running">0</div>
-        </div>
-
-        <div class="stat">
-            <div class="stat-label">Всего оборудования</div>
-            <div class="stat-value" id="total">0</div>
-        </div>
-
+<main class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">Система мониторинга</p>
+      <h1>Оборудование</h1>
+      <p class="subtitle">Текущее состояние и последние события</p>
     </div>
+    <button id="refresh" class="refresh" type="button">Обновить</button>
+  </header>
+  <p class="connection" role="status" aria-live="polite"><span id="connection-dot" class="dot"></span><span id="connection">Проверяем соединение…</span></p>
 
-    <div class="grid">
-
-        <section class="section">
-
-            <div class="top-line">
-                <h2>Состояние оборудования</h2>
-                <span class="update" id="updated">Обновление...</span>
-            </div>
-
-            <div id="machines">
-                <div class="empty">Загрузка данных...</div>
-            </div>
-
-        </section>
-
-        <section class="section">
-
-            <h2>Имитация событий</h2>
-
-            <label for="machine_id">Идентификатор станка</label>
-
-            <input
-                type="text"
-                id="machine_id"
-                value="CNC-01"
-                placeholder="Например, CNC-01"
-                maxlength="50"
-            >
-
-            <div class="actions">
-
-                <button
-                    id="run-button"
-                    onclick="sendEvent('RUNNING')">
-                    Работает
-                </button>
-
-                <button
-                    id="stop-button"
-                    class="primary"
-                    onclick="sendEvent('STOPPED')">
-                    Остановился
-                </button>
-
-            </div>
-
-            <div class="message" id="message">
-                Кнопки создают тестовые события.
-                Они не управляют реальным оборудованием.
-            </div>
-
-        </section>
-
+  <section class="card summary" aria-label="Общая статистика">
+    <div>
+      <p class="eyebrow">Сейчас работает</p>
+      <div class="summary-main"><span id="running" class="big">—</span><span class="metric-name">станков</span></div>
     </div>
+    <div class="summary-extra">
+      <div><strong id="stopped">—</strong>Остановлены</div>
+      <div><strong id="total">—</strong>Всего</div>
+    </div>
+  </section>
 
-    <section class="section">
+  <section class="card" aria-labelledby="machines-title">
+    <div class="heading"><h2 id="machines-title">Состояние станков</h2><span class="hint" id="updated">—</span></div>
+    <div id="machines" aria-live="polite"><p class="empty">Загрузка…</p></div>
+  </section>
 
-        <div class="top-line">
-            <h2>История событий</h2>
-            <span class="update">Последние 50 записей</span>
-        </div>
+  <section class="card" aria-labelledby="events-title">
+    <div class="heading"><h2 id="events-title">Последние события</h2><span class="hint">5 последних</span></div>
+    <div id="events"><p class="empty">Загрузка…</p></div>
+  </section>
 
-        <div class="table-container">
+  <details>
+    <summary>Подробная история</summary>
+    <div class="detail-body">
+      <p class="info">Здесь находятся простои и результаты отправки уведомлений. На основном экране они скрыты, чтобы не мешать.</p>
+      <h3 class="section-label">Простои</h3>
+      <div id="downtimes"><p class="empty">Загрузка…</p></div>
+      <h3 class="section-label">Последние уведомления</h3>
+      <div id="external"><p class="empty">Загрузка…</p></div>
+      <h3 class="section-label">Другие события</h3>
+      <div id="more-events"><p class="empty">Загрузка…</p></div>
+    </div>
+  </details>
 
-            <table>
-
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Оборудование</th>
-                        <th>Состояние</th>
-                        <th>Время события</th>
-                        <th>Требуется уведомление</th>
-                    </tr>
-                </thead>
-
-                <tbody id="events">
-                    <tr>
-                        <td colspan="5">Загрузка...</td>
-                    </tr>
-                </tbody>
-
-            </table>
-
-        </div>
-
-    </section>
-
+  <details id="testing">
+    <summary>Тестирование событий</summary>
+    <div class="detail-body">
+      <p class="info"><strong>Только для проверки программы.</strong> Эти кнопки записывают события в базу. При новой остановке возможны реальные сообщения VK и задачи Jira. Сами станки кнопки не включают и не выключают.</p>
+      <label for="machine-id">Идентификатор станка</label>
+      <input id="machine-id" value="CNC-01" maxlength="50" autocomplete="off">
+      <label for="api-key">Ключ доступа к API (только если настроен)</label>
+      <input id="api-key" type="password" placeholder="Если не настроен — оставить пустым" autocomplete="off">
+      <div class="controls">
+        <button id="send-running" class="action" type="button">Работает</button>
+        <button id="send-stopped" class="action stop" type="button">Остановился</button>
+      </div>
+      <p id="test-message" class="message" role="status" aria-live="polite"></p>
+    </div>
+  </details>
+  <footer>Учебный проект · Данные обновляются каждые 15 секунд</footer>
 </main>
-
-<footer>
-    Система мониторинга оборудования
-</footer>
-
 <script>
-
-const API = {
-    machines: "/api/machines",
-    events: "/api/events"
-};
-
-let sending = false;
-
-
-async function getJSON(url, options = {}) {
-
-    const response = await fetch(url, options);
-
-    if (!response.ok) {
-        throw new Error(
-            "Ошибка сервера: HTTP " + response.status
-        );
+  'use strict';
+  const byId = id => document.getElementById(id);
+  const state = {events:[],downtimes:[],incidents:[],notifications:[]};
+  const fmt = new Intl.DateTimeFormat('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const timeOf = value => {
+    if (!value) return '—';
+    const raw = String(value).trim();
+    const normalized = raw.includes('T') ? raw : raw.replace(' ','T') + (raw.endsWith('Z') ? '' : 'Z');
+    const date = new Date(normalized);
+    return Number.isNaN(date.getTime()) ? raw.slice(0,16) : fmt.format(date);
+  };
+  const make = (tag,className,textValue) => {
+    const node=document.createElement(tag);
+    if(className) node.className=className;
+    if(textValue!==undefined) node.textContent=String(textValue);
+    return node;
+  };
+  const empty = message => make('p','empty',message);
+  const replace = (container,nodes) => container.replaceChildren(...nodes);
+  const badge = (value) => {
+    const stopped = value==='STOPPED';
+    const el=make('span','badge'+(stopped?' stop':''));
+    el.append(make('span','dot'),document.createTextNode(stopped?'Остановлен':'Работает'));
+    return el;
+  };
+  function renderMachines(machines){
+    const running=machines.filter(m=>m.status==='RUNNING').length;
+    const stopped=machines.filter(m=>m.status==='STOPPED').length;
+    byId('running').textContent=running;
+    byId('stopped').textContent=stopped;
+    byId('total').textContent=machines.length;
+    replace(byId('machines'),machines.length?machines.map(m=>{
+      const row=make('div','machine');
+      row.append(make('span','machine-name',m.machine_id),badge(m.status));
+      return row;
+    }):[empty('Пока нет зарегистрированного оборудования.')]);
+    byId('updated').textContent='Обновлено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  }
+  function eventRow(evt){
+    const row=make('div','event');
+    row.append(make('span','event-time',timeOf(evt.created_at||evt.stopped_at)),
+               make('span','event-machine',evt.machine_id),
+               make('span','event-status'+(evt.status==='STOPPED'?' stop':''),evt.status==='STOPPED'?'Остановлен':'Работает'));
+    return row;
+  }
+  function renderEvents(events){
+    state.events=events;
+    replace(byId('events'),events.length?events.slice(0,5).map(eventRow):[empty('Событий пока нет.')]);
+    replace(byId('more-events'),events.length>5?events.slice(5).map(eventRow):[empty('Других событий нет.')]);
+  }
+  function duration(seconds,ongoing){
+    if(seconds==null) return ongoing?'Идёт':'—';
+    const s=Math.max(0,Math.floor(Number(seconds)||0));
+    const hh=Math.floor(s/3600),mm=Math.floor(s%3600/60),ss=s%60;
+    return (hh?hh+' ч ':'')+(mm?mm+' мин ':'')+ss+' сек'+(ongoing?' · идёт':'');
+  }
+  function renderDowntimes(rows){
+    state.downtimes=rows;
+    replace(byId('downtimes'), rows.length?rows.slice(0,10).map(d=>{
+      const row=make('div','outage');
+      row.append(make('span','event-machine',d.machine_id),make('span','quiet',timeOf(d.started_at)),
+                 make('span','quiet',d.ended_at?timeOf(d.ended_at):'Не завершён'),
+                 make('span','',duration(d.duration_seconds,d.ongoing)));
+      return row;
+    }):[empty('Простоев пока нет.')]);
+  }
+  function renderExternal(){
+    const lines=[];
+    const jira=state.incidents[0];
+    const vk=state.notifications[0];
+    const entries=[['Jira (последний инцидент)', jira?((jira.jira_key||'Без номера')+' · '+jira.status):'Записей нет'],
+                   ['VK (последнее уведомление)',vk?(vk.status||'—'):'Записей нет']];
+    for(const [name,status] of entries){
+      const row=make('div','service-status');
+      row.append(make('span','',name),make('span','quiet',status));lines.push(row);
     }
-
-    return await response.json();
-}
-
-
-function createCell(value) {
-
-    const cell = document.createElement("td");
-    cell.textContent = String(value ?? "");
-
-    return cell;
-}
-
-
-function formatTime(value) {
-
-    if (!value) {
-        return "—";
-    }
-
-    return String(value)
-        .replace("T", " ")
-        .replace("Z", " UTC")
-        .slice(0, 23);
-}
-
-
-async function loadMachines() {
-
-    const machines = await getJSON(API.machines);
-
-    const container = document.getElementById("machines");
-
-    container.replaceChildren();
-
-    let running = 0;
-    let stopped = 0;
-
-    const sortedMachines = [...machines].sort((a, b) => {
-
-        if (a.status === b.status) {
-            return a.machine_id.localeCompare(b.machine_id);
-        }
-
-        return a.status === "STOPPED" ? -1 : 1;
-    });
-
-    if (sortedMachines.length === 0) {
-
-        const empty = document.createElement("div");
-
-        empty.className = "empty";
-        empty.textContent = "Оборудование пока не зарегистрировано";
-
-        container.appendChild(empty);
-    }
-
-    sortedMachines.forEach(machine => {
-
-        const item = document.createElement("div");
-        item.className = "machine";
-
-        const name = document.createElement("div");
-        name.className = "machine-name";
-        name.textContent = machine.machine_id;
-
-        const status = document.createElement("span");
-        status.className = "badge";
-
-        if (machine.status === "RUNNING") {
-
-            running++;
-
-            status.classList.add("running");
-            status.textContent = "Работает";
-
-        } else if (machine.status === "STOPPED") {
-
-            stopped++;
-
-            status.classList.add("stopped");
-            status.textContent = "Остановлен";
-
-        } else {
-
-            status.textContent = "Неизвестно";
-
-        }
-
-        item.appendChild(name);
-        item.appendChild(status);
-
-        container.appendChild(item);
-    });
-
-    document.getElementById("running").textContent = running;
-    document.getElementById("stopped").textContent = stopped;
-    document.getElementById("total").textContent = machines.length;
-
-    document.getElementById("updated").textContent =
-        "Обновлено: " + new Date().toLocaleTimeString("ru-RU");
-}
-
-
-async function loadEvents() {
-
-    const events = await getJSON(API.events);
-
-    const table = document.getElementById("events");
-
-    table.replaceChildren();
-
-    if (events.length === 0) {
-
-        const row = document.createElement("tr");
-        const cell = createCell("Событий пока нет");
-
-        cell.colSpan = 5;
-        row.appendChild(cell);
-
-        table.appendChild(row);
+    replace(byId('external'),lines);
+  }
+  async function getJSON(path){
+    const response=await fetch(path,{cache:'no-store',headers:{'Accept':'application/json'}});
+    if(!response.ok) throw Error('HTTP '+response.status+' ('+path+')');
+    const data=await response.json();
+    if(!Array.isArray(data)) throw Error('Неверный формат ответа '+path);
+    return data;
+  }
+  let refreshing=false;
+  async function refresh(){
+    if(refreshing) return;
+    refreshing=true; byId('refresh').disabled=true;
+    try{
+      const [machines,events,downtimes,incidents,notifications]=await Promise.all([
+        getJSON('/api/machines'),getJSON('/api/events'),getJSON('/api/downtimes'),
+        getJSON('/api/incidents'),getJSON('/api/notifications')
+      ]);
+      renderMachines(machines);renderEvents(events);renderDowntimes(downtimes);
+      state.incidents=incidents;state.notifications=notifications;renderExternal();
+      byId('connection').textContent='Связь с сервером есть';
+      byId('connection-dot').className='dot good';
+    }catch(error){
+      byId('connection').textContent='Нет соединения с данными. Проверьте сервер FastAPI.';
+      byId('connection-dot').className='dot bad';
+      console.error('Мониторинг: ошибка обновления',error);
+    }finally{refreshing=false;byId('refresh').disabled=false;}
+  }
+  async function sendEvent(status){
+    const machine=byId('machine-id').value.trim();
+    const output=byId('test-message');
+    if(!machine){output.textContent='Укажите название станка.';return;}
+    const warning=status==='STOPPED'
+      ?'Отправить тестовую остановку для '+machine+'? При новой остановке могут создаться настоящая задача Jira и сообщение VK.'
+      :'Записать событие «Работает» для '+machine+' в базу данных?';
+    if(!window.confirm(warning)) return;
+    const controls=[byId('send-running'),byId('send-stopped')];
+    controls.forEach(el=>el.disabled=true);
+    output.textContent='Отправляем событие…';
+    try{
+      const headers={'Content-Type':'application/json','Accept':'application/json'};
+      const key=byId('api-key').value;
+      if(key) headers['X-API-Key']=key;
+      const response=await fetch('/api/events',{
+        method:'POST',headers,body:JSON.stringify({machine_id:machine,status})
+      });
+      if(!response.ok){
+        output.textContent=response.status===401?'Нет доступа. Проверьте ключ API.':'Ошибка сервера: HTTP '+response.status;
         return;
-    }
-
-    events.forEach(event => {
-
-        const row = document.createElement("tr");
-
-        row.appendChild(createCell(event.id));
-        row.appendChild(createCell(event.machine_id));
-
-        const status = event.status === "RUNNING"
-            ? "Работает"
-            : "Остановлен";
-
-        row.appendChild(createCell(status));
-
-        const eventTime = event.status === "STOPPED"
-            ? event.stopped_at || event.created_at
-            : event.created_at;
-
-        row.appendChild(
-            createCell(formatTime(eventTime))
-        );
-
-        const notification = event.notification_needed
-            ? "Да"
-            : "Нет";
-
-        row.appendChild(createCell(notification));
-
-        table.appendChild(row);
-    });
-}
-
-
-async function refreshData() {
-
-    try {
-
-        await Promise.all([
-            loadMachines(),
-            loadEvents()
-        ]);
-
-    } catch (error) {
-
-        document.getElementById("updated").textContent =
-            "Ошибка подключения";
-
-        document.getElementById("message").textContent =
-            error.message;
-    }
-}
-
-
-async function sendEvent(status) {
-
-    if (sending) {
-        return;
-    }
-
-    const machineId = document
-        .getElementById("machine_id")
-        .value
-        .trim();
-
-    const message = document.getElementById("message");
-
-    if (!machineId) {
-
-        message.textContent = "Введите номер оборудования";
-        return;
-    }
-
-    const data = {
-        machine_id: machineId,
-        status: status,
-        stopped_at: status === "STOPPED"
-            ? new Date().toISOString()
-            : ""
-    };
-
-    sending = true;
-
-    document.getElementById("run-button").disabled = true;
-    document.getElementById("stop-button").disabled = true;
-
-    try {
-
-        const result = await getJSON(API.events, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-        });
-
-        message.textContent = result.message;
-
-        await refreshData();
-
-    } catch (error) {
-
-        message.textContent = error.message;
-
-    } finally {
-
-        sending = false;
-
-        document.getElementById("run-button").disabled = false;
-        document.getElementById("stop-button").disabled = false;
-    }
-}
-
-
-refreshData();
-
-setInterval(() => {
-    if (!sending) {
-        refreshData();
-    }
-}, 5000);
-
+      }
+      const body=await response.json();
+      const notes=body.notification_needed
+        ?'Jira: '+(body.jira_incident?.status||'—')+'; VK: '+(body.vk_notification?.status||'—')
+        :'Дополнительное уведомление не требуется.';
+      output.textContent='Событие записано. '+notes;
+      await refresh();
+    }catch(error){output.textContent='Не удалось отправить событие. Проверьте сервер.';console.error(error);}
+    finally{controls.forEach(el=>el.disabled=false);}
+  }
+  byId('refresh').addEventListener('click',refresh);
+  byId('send-running').addEventListener('click',()=>sendEvent('RUNNING'));
+  byId('send-stopped').addEventListener('click',()=>sendEvent('STOPPED'));
+  refresh();
+  setInterval(()=>{if(!document.hidden) refresh();},15000);
 </script>
-
 </body>
 </html>

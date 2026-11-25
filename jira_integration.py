@@ -38,11 +38,11 @@ def create_incident(
             "JIRA_MODE должен быть demo или live"
         )
 
-    # Настройки реальной Jira
-    jira_url = os.getenv("JIRA_URL", "").rstrip("/")
-    jira_user = os.getenv("JIRA_USER", "")
-    jira_token = os.getenv("JIRA_API_TOKEN", "")
-    project_key = os.getenv("JIRA_PROJECT_KEY", "")
+    # Настройки Jira
+    jira_url = os.getenv("JIRA_URL", "").strip().rstrip("/")
+    jira_user = os.getenv("JIRA_USER", "").strip()
+    jira_token = os.getenv("JIRA_API_TOKEN", "").strip()
+    project_key = os.getenv("JIRA_PROJECT_KEY", "").strip()
 
     if not all([
         jira_url,
@@ -59,6 +59,7 @@ def create_incident(
             "Для Jira необходимо использовать HTTPS"
         )
 
+    # Описание остановки оборудования
     description = (
         f"Оборудование: {machine_id}\n"
         f"Начало простоя: {started_at}\n"
@@ -97,25 +98,60 @@ def create_incident(
     }
 
     try:
+        # Получаем идентификатор Jira Cloud
+        tenant_response = requests.get(
+            f"{jira_url}/_edge/tenant_info",
+            timeout=10,
+        )
+
+        tenant_response.raise_for_status()
+
+        tenant_data = tenant_response.json()
+        cloud_id = tenant_data.get("cloudId")
+
+        if not cloud_id:
+            raise JiraIntegrationError(
+                "Не удалось получить Cloud ID Jira"
+            )
+
+        # Адрес API для токена с областями действия
+        api_url = (
+            f"https://api.atlassian.com/ex/jira/"
+            f"{cloud_id}/rest/api/3/issue"
+        )
+
+        # Создаём настоящую задачу Jira
         response = requests.post(
-            f"{jira_url}/rest/api/3/issue",
+            api_url,
             json=payload,
             auth=HTTPBasicAuth(
                 jira_user,
-                jira_token
+                jira_token,
             ),
             headers={
-                "Accept": "application/json"
+                "Accept": "application/json",
             },
             timeout=10,
         )
 
         response.raise_for_status()
+
         result = response.json()
+
+    except requests.HTTPError as exc:
+        status_code = (
+            exc.response.status_code
+            if exc.response is not None
+            else "неизвестен"
+        )
+
+        raise JiraIntegrationError(
+            f"Ошибка Jira HTTP: {status_code}"
+        ) from exc
 
     except requests.RequestException as exc:
         raise JiraIntegrationError(
-            "Не удалось создать инцидент в Jira"
+            "Ошибка соединения с Jira"
         ) from exc
 
     except ValueError as exc:
@@ -123,6 +159,7 @@ def create_incident(
             "Jira вернула некорректный JSON"
         ) from exc
 
+    # Проверяем номер созданной задачи
     issue_key = result.get("key")
 
     if not issue_key:

@@ -61,11 +61,27 @@ def test_full_cycle_does_not_duplicate_notifications(service):
 
 
 def test_new_stop_after_resume_creates_second_incident(service):
-    for status in ("STOPPED", "RUNNING", "STOPPED"):
-        send(service, "LATHE-01", status)
+    started_at = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+    send(service, "LATHE-01", "STOPPED", started_at)
+    send(service, "LATHE-01", "RUNNING")
+    send(service, "LATHE-01", "STOPPED", started_at)
     assert db_count(service, "jira_incidents") == 2
     assert db_count(service, "vk_notifications") == 2
     assert db_count(service, "downtimes") == 2
+    assert [row["jira_key"] for row in service.get_downtimes()] == ["DEMO-3", "DEMO-1"]
+
+
+def test_existing_downtime_keeps_delivery_statuses_after_schema_update(service):
+    send(service, "LEGACY-01", "STOPPED")
+    with sqlite3.connect(service.DB_PATH) as db:
+        db.execute("ALTER TABLE downtimes DROP COLUMN event_id")
+
+    service.init_db()
+
+    downtime, = service.get_downtimes()
+    assert downtime["ongoing"] is True
+    assert downtime["jira_key"] == "DEMO-1"
+    assert downtime["vk_status"] == "sent"
 
 
 def test_two_machines_are_independent(service):
@@ -181,11 +197,34 @@ def test_http_full_rest_flow(service):
     async def scenario():
         transport = httpx.ASGITransport(app=service.app)
         async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
-            for status in ("RUNNING", "STOPPED", "STOPPED", "RUNNING"):
-                assert (await client.post("/api/events", json={"machine_id":"CNC-06", "status":status})).status_code == 200
-            assert len((await client.get("/api/events")).json()) == 4
+            steps = [
+                ("RUNNING", False),
+                ("STOPPED", True),
+                ("STOPPED", False),
+                ("RUNNING", False),
+                ("STOPPED", True),
+            ]
+            for status, should_notify in steps:
+                response = await client.post(
+                    "/api/events", json={"machine_id": "CNC-06", "status": status}
+                )
+                assert response.status_code == 200
+                result = response.json()
+                assert result["notification_needed"] is should_notify
+                assert result["jira_incident"]["status"] == ("demo" if should_notify else "not_required")
+                assert result["vk_notification"]["status"] == ("sent" if should_notify else "not_required")
+            assert len((await client.get("/api/events")).json()) == 5
             assert len((await client.get("/api/machines")).json()) == 1
-            assert len((await client.get("/api/incidents")).json()) == 1
-            assert len((await client.get("/api/notifications")).json()) == 1
-            assert len((await client.get("/api/downtimes")).json()) == 1
+            assert len((await client.get("/api/incidents")).json()) == 2
+            assert len((await client.get("/api/notifications")).json()) == 2
+            active, downtime = (await client.get("/api/downtimes")).json()
+            assert active["ongoing"] is True
+            assert active["jira_key"] == "DEMO-5"
+            assert downtime["machine_id"] == "CNC-06"
+            assert downtime["ongoing"] is False
+            assert downtime["duration_seconds"] >= 0
+            assert downtime["jira_status"] == "demo"
+            assert downtime["jira_key"] == "DEMO-2"
+            assert downtime["vk_status"] == "sent"
+            assert 'id="downtimes"' in (await client.get("/dashboard")).text
     asyncio.run(scenario())

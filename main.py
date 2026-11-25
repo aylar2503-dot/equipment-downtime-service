@@ -48,6 +48,7 @@ def init_db():
     """Создать отсутствующие таблицы, сохранив существующие данные."""
 
     with closing(get_connection()) as conn, conn:
+        conn.execute("BEGIN IMMEDIATE")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS machines (
                 machine_id TEXT PRIMARY KEY,
@@ -72,9 +73,14 @@ def init_db():
                 machine_id TEXT NOT NULL,
                 started_at TEXT NOT NULL,
                 ended_at TEXT,
-                duration_seconds INTEGER
+                duration_seconds INTEGER,
+                event_id INTEGER
             )
         """)
+
+        columns = conn.execute("PRAGMA table_info(downtimes)").fetchall()
+        if all(column["name"] != "event_id" for column in columns):
+            conn.execute("ALTER TABLE downtimes ADD COLUMN event_id INTEGER")
 
         conn.execute("""
             CREATE UNIQUE INDEX IF NOT EXISTS one_open_downtime_per_machine
@@ -318,7 +324,7 @@ def receive_event(event: MachineEvent):
             if notification_needed:
                 message = "ВНИМАНИЕ! Станок остановился!"
 
-                conn.execute(
+                downtime_cursor = conn.execute(
                     """
                     INSERT INTO downtimes (
                         machine_id,
@@ -412,6 +418,11 @@ def receive_event(event: MachineEvent):
         if notification_needed:
 
             incident_event_id = event_id
+
+            conn.execute(
+                "UPDATE downtimes SET event_id = ? WHERE id = ?",
+                (event_id, downtime_cursor.lastrowid),
+            )
 
             conn.execute(
                 """
@@ -547,9 +558,22 @@ def get_downtimes():
     with closing(get_connection()) as conn:
         rows = conn.execute(
             """
-            SELECT *
-            FROM downtimes
-            ORDER BY id DESC
+            SELECT downtime.*,
+                   jira.status AS jira_status,
+                   jira.jira_key,
+                   vk.status AS vk_status
+            FROM downtimes AS downtime
+            LEFT JOIN jira_incidents AS jira
+              ON jira.event_id = COALESCE(downtime.event_id, (
+                  SELECT MIN(incident.event_id)
+                  FROM jira_incidents AS incident
+                  WHERE incident.machine_id = downtime.machine_id
+                    AND incident.started_at = downtime.started_at
+                  HAVING COUNT(*) = 1
+              ))
+            LEFT JOIN vk_notifications AS vk
+              ON vk.event_id = COALESCE(downtime.event_id, jira.event_id)
+            ORDER BY downtime.id DESC
             LIMIT 50
             """
         ).fetchall()
